@@ -1,0 +1,24 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: localebridge
+      POSTGRES_PASSWORD: localebridge
+      POSTGRES_DB: localebridge
+    ports:
+      - "5432:5432"
+    volumes:
+      - pg-data:/var/lib/postgresql/data
+
+  orchestrator:
+    build:
+      context: apps/orchestrator
+    depends_on:
+      - postgres
+    environment:
+      DATABASE_URL: postgresql://localebridge:localebridge@postgres:5432/localebridge
+    ports:
+      - "8000:8000"
+
+volumes:
+  pg-data: {}

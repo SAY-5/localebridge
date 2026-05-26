@@ -1,0 +1,16 @@
+{
+  "name": "localebridge",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Continuous-localization pipeline for React applications",
+  "license": "MIT",
+  "packageManager": "pnpm@10.0.0",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "build": "pnpm -r --filter ./apps/extractor build",
+    "typecheck": "pnpm -r --filter ./apps/extractor typecheck",
+    "test": "pnpm -r --filter ./apps/extractor test"
+  }
+}

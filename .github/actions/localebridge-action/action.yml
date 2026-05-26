@@ -1,0 +1,40 @@
+name: LocaleBridge
+description: Extract, translate, validate, and write locale files for a React app
+inputs:
+  src:
+    description: source directory to walk
+    required: true
+  locales-dir:
+    description: directory to write <lang>.json into
+    required: true
+  targets:
+    description: comma-separated locale codes
+    required: false
+    default: "es,fr,de,ja,ar,zh-CN,hi"
+runs:
+  using: composite
+  steps:
+    - name: Build extractor
+      shell: bash
+      run: pnpm --filter ./apps/extractor build
+    - name: Extract strings
+      shell: bash
+      run: |
+        node apps/extractor/dist/cli.js \
+          --src "${{ inputs.src }}" \
+          --out /tmp/localebridge-extracted.json
+    - name: Translate + validate + write
+      shell: bash
+      run: |
+        poetry -C apps/orchestrator run localebridge-run \
+          --input /tmp/localebridge-extracted.json \
+          --locales "${{ inputs.locales-dir }}" \
+          --targets "${{ inputs.targets }}"
+    - name: Diff summary
+      shell: bash
+      run: |
+        echo "## LocaleBridge run" >> "$GITHUB_STEP_SUMMARY"
+        for f in "${{ inputs.locales-dir }}"/*.json; do
+          n=$(python -c "import json,sys;print(len(json.load(open('$f'))))")
+          echo "- $(basename "$f"): $n keys" >> "$GITHUB_STEP_SUMMARY"
+        done

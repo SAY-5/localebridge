@@ -1,0 +1,103 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  extractor:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter ./apps/extractor typecheck
+      - run: pnpm --filter ./apps/extractor build
+      - run: pnpm --filter ./apps/extractor test
+
+  orchestrator:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.11", "3.12"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - run: pipx install poetry==2.1.3
+      - run: poetry -C apps/orchestrator install --no-interaction
+      - run: poetry -C apps/orchestrator run ruff check src tests
+      - run: poetry -C apps/orchestrator run mypy src
+      - run: poetry -C apps/orchestrator run pytest -q --cov=localebridge --cov-report=term-missing
+
+  integration:
+    runs-on: ubuntu-latest
+    needs: [extractor, orchestrator]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pipx install poetry==2.1.3
+      - run: pnpm install --frozen-lockfile
+      - run: poetry -C apps/orchestrator install --no-interaction
+      - name: Run e2e
+        run: |
+          pnpm --filter ./apps/extractor build
+          node apps/extractor/dist/cli.js --src examples/react-app/src --out /tmp/extracted.json
+          poetry -C apps/orchestrator run localebridge-run \
+            --input /tmp/extracted.json \
+            --locales examples/react-app/locales \
+            --targets es,fr,de,ja,ar,zh-CN,hi
+
+  docker:
+    runs-on: ubuntu-latest
+    needs: orchestrator
+    steps:
+      - uses: actions/checkout@v4
+      - run: docker build -f apps/orchestrator/Dockerfile -t localebridge-orchestrator:ci apps/orchestrator
+      - run: docker run --rm localebridge-orchestrator:ci python -c "import localebridge; print(localebridge.__version__)"
+
+  action-self-test:
+    runs-on: ubuntu-latest
+    needs: integration
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pipx install poetry==2.1.3
+      - run: pnpm install --frozen-lockfile
+      - run: poetry -C apps/orchestrator install --no-interaction
+      - name: Use composite action against examples/react-app
+        uses: ./.github/actions/localebridge-action
+        with:
+          src: examples/react-app/src
+          locales-dir: examples/react-app/locales
+          targets: es,fr,de,ja,ar,zh-CN,hi
