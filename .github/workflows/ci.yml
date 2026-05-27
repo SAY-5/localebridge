@@ -72,6 +72,26 @@ jobs:
       - run: docker build -f apps/orchestrator/Dockerfile -t localebridge-orchestrator:ci apps/orchestrator
       - run: docker run --rm localebridge-orchestrator:ci python -c "import localebridge; print(localebridge.__version__)"
 
+  bench-smoke:
+    runs-on: ubuntu-latest
+    needs: [extractor, orchestrator]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pipx install poetry==2.1.3
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter ./apps/extractor build
+      - run: poetry -C apps/orchestrator install --no-interaction
+      - run: poetry -C apps/orchestrator run python -m localebridge.bench --n 500 --files 20
+
   action-self-test:
     runs-on: ubuntu-latest
     needs: integration

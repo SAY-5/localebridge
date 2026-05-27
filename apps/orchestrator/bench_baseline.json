@@ -1,0 +1,14 @@
+{
+  "n": 10000,
+  "files": 200,
+  "extraction_seconds": 0.75,
+  "extraction_files_per_sec": 266.7,
+  "extraction_strings_per_sec": 13335.9,
+  "extraction_peak_mb": 0.084,
+  "translation_seconds": 0.18,
+  "translation_per_sec": 389600.99,
+  "icu_validations_per_sec": 568322.9,
+  "plural_validations_per_sec": 4088864.81,
+  "unicode_validations_per_sec": 1224920.11,
+  "length_validations_per_sec": 4316391.49
+}
