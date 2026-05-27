@@ -15,7 +15,9 @@ from dataclasses import dataclass
 class ClaudeProvider:
     model: str = "claude-opus-4-7"
 
-    def translate(self, key: str, source_text: str, target_locale: str) -> str:
+    def translate(
+        self, key: str, source_text: str, target_locale: str, *, note: str | None = None
+    ) -> str:
         if os.environ.get("LOCALEBRIDGE_LIVE_LLM") != "1":
             raise RuntimeError(
                 "ClaudeProvider.translate called but LOCALEBRIDGE_LIVE_LLM is not set. "

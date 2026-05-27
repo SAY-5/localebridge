@@ -1,0 +1,238 @@
+:root {
+  --ink: #14161a;
+  --muted: #5b6470;
+  --line: #e3e6ea;
+  --bg: #f6f7f9;
+  --card: #ffffff;
+  --accent: #2b59ff;
+  --add: #1a7f37;
+  --add-bg: #e7f5ec;
+  --remove: #b3261e;
+  --remove-bg: #fbe9e7;
+  --warn: #9a6700;
+  --warn-bg: #fff4d6;
+  --error: #b3261e;
+  --error-bg: #fbe9e7;
+  --radius: 12px;
+  font-family: ui-sans-serif, system-ui, "Segoe UI", Roboto, sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+}
+
+.app {
+  max-width: 760px;
+  margin: 0 auto;
+  padding: 32px 20px 64px;
+}
+
+.app__head {
+  display: flex;
+  align-items: baseline;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.app__title {
+  font-size: 1.5rem;
+  font-weight: 650;
+  letter-spacing: -0.01em;
+  margin: 0;
+}
+
+.app__count {
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+  margin: 0;
+  margin-inline-end: auto;
+}
+
+.app__empty {
+  color: var(--muted);
+  padding: 40px 0;
+  text-align: center;
+}
+
+.app__error,
+.card__error {
+  color: var(--error);
+  background: var(--error-bg);
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-size: 0.9rem;
+}
+
+.app__queue {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.card {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 18px 20px;
+  box-shadow: 0 1px 2px rgba(20, 22, 26, 0.04);
+}
+
+.card__head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.card__key {
+  font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  font-size: 0.85rem;
+  color: var(--ink);
+}
+
+.card__locale {
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 10%, white);
+  padding: 2px 8px;
+  border-radius: 999px;
+}
+
+.card__row {
+  display: block;
+  margin-bottom: 12px;
+}
+
+.card__label {
+  display: block;
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--muted);
+  margin-bottom: 4px;
+}
+
+.card__source,
+.card__ai {
+  margin: 0;
+  line-height: 1.45;
+}
+
+.card__source {
+  color: var(--muted);
+}
+
+.card__edit,
+.card__reason {
+  width: 100%;
+  font: inherit;
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--bg);
+  resize: vertical;
+}
+
+.card__edit:focus,
+.card__reason:focus {
+  outline: 2px solid color-mix(in srgb, var(--accent) 40%, transparent);
+  border-color: var(--accent);
+}
+
+.card__warnings {
+  list-style: none;
+  margin: 0 0 12px;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.warn {
+  font-size: 0.82rem;
+  padding: 6px 10px;
+  border-radius: 8px;
+  background: var(--warn-bg);
+  color: var(--warn);
+}
+
+.warn--error {
+  background: var(--error-bg);
+  color: var(--error);
+}
+
+.warn__code {
+  font-family: ui-monospace, monospace;
+  font-weight: 600;
+}
+
+.card__diff {
+  margin: -4px 0 12px;
+  line-height: 1.5;
+}
+
+.tok--add {
+  background: var(--add-bg);
+  color: var(--add);
+  border-radius: 3px;
+}
+
+.tok--remove {
+  background: var(--remove-bg);
+  color: var(--remove);
+  text-decoration: line-through;
+  border-radius: 3px;
+}
+
+.card__actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.btn {
+  font: inherit;
+  font-weight: 550;
+  padding: 8px 16px;
+  border-radius: 8px;
+  border: 1px solid var(--line);
+  background: white;
+  cursor: pointer;
+  transition: filter 0.12s ease;
+}
+
+.btn:hover:not(:disabled) {
+  filter: brightness(0.97);
+}
+
+.btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.btn--approve {
+  background: var(--add);
+  border-color: var(--add);
+  color: white;
+}
+
+.btn--edit {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: white;
+}
+
+.btn--reject {
+  color: var(--remove);
+  border-color: color-mix(in srgb, var(--remove) 40%, var(--line));
+}

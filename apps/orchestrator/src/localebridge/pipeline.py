@@ -21,8 +21,20 @@ def run(
     targets: tuple[str, ...] = DEFAULT_LOCALES,
     translator: Translator | None = None,
     tm: InMemoryTM | None = None,
+    review_mode: bool = False,
 ) -> tuple[ValidationReport, dict[str, int]]:
-    """Run the pipeline. Returns (validation_report, write_counts)."""
+    """Run the pipeline. Returns (validation_report, write_counts).
+
+    Translation-memory reuse rules (this is how the human-review queue
+    "remembers" a reviewer's decision across runs):
+
+      - `edited` or `approved` cached entries are reused verbatim and never
+        re-sent to the translator (no re-LLM-call).
+      - `rejected` cached entries are re-translated; the reviewer's reject
+        reason is passed back to the translator as context.
+      - missing entries are translated fresh. In `review_mode` they enter as
+        `pending_review` (so they surface in the queue) instead of auto-approved.
+    """
     translator = translator or FakeTranslator()
     tm = tm or InMemoryTM()
     raw = json.loads(Path(extracted_path).read_text(encoding="utf-8"))
@@ -31,16 +43,17 @@ def run(
     for e in extracted:
         for locale in targets:
             cached = tm.get(e.key, locale)
-            if cached is not None:
+            if cached is not None and cached.status in ("edited", "approved", "pending_review"):
                 translations.append(cached)
                 continue
-            txt = translator.translate(e.key, e.default_value, locale)
+            note = cached.reject_reason if cached is not None else None
+            txt = translator.translate(e.key, e.default_value, locale, note=note)
             t = Translation(
                 key=e.key,
                 locale=locale,
                 source_text=e.default_value,
                 translated_text=txt,
-                status="approved",  # FakeTranslator output is auto-approved in the basic pipeline
+                status="pending_review" if review_mode else "approved",
             )
             tm.put(t)
             translations.append(t)

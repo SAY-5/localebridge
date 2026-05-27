@@ -8,12 +8,27 @@ from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 
 from .tm import InMemoryTM
+from .validators import (
+    validate_icu,
+    validate_length,
+    validate_plural_coverage,
+    validate_unicode,
+)
 
 
 class ReviewBody(BaseModel):
     action: str  # approve | edit | reject
     edited_text: str | None = None
     reason: str | None = None
+
+
+def _warnings_for(key: str, locale: str, source_text: str, translated_text: str) -> list[dict[str, str]]:
+    issues = []
+    issues.extend(validate_icu(key, locale, translated_text))
+    issues.extend(validate_unicode(key, locale, translated_text))
+    issues.extend(validate_plural_coverage(key, locale, source_text, translated_text))
+    issues.extend(validate_length(key, locale, source_text, translated_text))
+    return [{"code": i.code, "severity": i.severity, "message": i.message} for i in issues]
 
 
 def create_app(tm: InMemoryTM | None = None) -> FastAPI:
@@ -27,6 +42,25 @@ def create_app(tm: InMemoryTM | None = None) -> FastAPI:
     @app.get("/v1/translations/{locale}")
     def list_for_locale(locale: str) -> list[dict[str, Any]]:
         return [t.model_dump() for t in tm.all_for_locale(locale)]
+
+    @app.get("/v1/queue")
+    def pending_queue() -> list[dict[str, Any]]:
+        """Diff-and-approve queue: every pending item with its source,
+        AI translation, and the validator warnings a reviewer should see."""
+        out: list[dict[str, Any]] = []
+        for t in tm.pending():
+            out.append(
+                {
+                    "key": t.key,
+                    "locale": t.locale,
+                    "source": t.source_text,
+                    "ai_translation": t.translated_text,
+                    "validator_warnings": _warnings_for(
+                        t.key, t.locale, t.source_text, t.translated_text
+                    ),
+                }
+            )
+        return out
 
     @app.post("/v1/translations/{locale}/{key}/review")
     def review(locale: str, key: str, body: ReviewBody) -> dict[str, Any]:

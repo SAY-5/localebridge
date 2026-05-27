@@ -26,5 +26,9 @@ class InMemoryTM:
     def all_for_locale(self, locale: str) -> list[Translation]:
         return [t for (_k, loc), t in self._store.items() if loc == locale]
 
+    def pending(self) -> list[Translation]:
+        """Translations awaiting human review, in insertion order."""
+        return [t for t in self._store.values() if t.status == "pending_review"]
+
     def size(self) -> int:
         return len(self._store)

@@ -56,7 +56,9 @@ class FakeTranslator:
         """Pin a human-edited translation; bypasses scripted output."""
         self._human_overrides[(key, locale)] = text
 
-    def translate(self, key: str, source_text: str, target_locale: str) -> str:
+    def translate(
+        self, key: str, source_text: str, target_locale: str, *, note: str | None = None
+    ) -> str:
         override = self._human_overrides.get((key, target_locale))
         if override is not None:
             return override
