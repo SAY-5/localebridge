@@ -9,7 +9,16 @@ from pathlib import Path
 import pytest
 
 from localebridge import bench
-from localebridge.bench import BenchResult, regress
+from localebridge.bench import (
+    BenchResult,
+    measure_translation,
+    measure_validation,
+    regress,
+    synthesize_react_app,
+)
+from localebridge.models import ExtractedString, Translation
+from localebridge.pipeline import DEFAULT_LOCALES
+from localebridge.translator import FakeTranslator
 
 _FAST = BenchResult(
     n=500,
@@ -69,3 +78,47 @@ def test_regress_fails_on_throughput_drop(
     # Half the throughput trips every axis.
     monkeypatch.setattr(bench, "run_bench", lambda n, files: _slow_of(_FAST, 0.50))
     assert regress(threshold=0.30, n=500, files=20) == 1
+
+
+def test_synthesize_react_app(tmp_path: Path) -> None:
+    """Node-free: the synthesizer alone produces the requested file/string shape."""
+    src = tmp_path / "src"
+    synthesize_react_app(src, n=120, files=12)
+    files = sorted(src.glob("*.tsx"))
+    assert len(files) == 12
+    total = sum(f.read_text().count('t("k.') for f in files)
+    assert total == 120
+
+
+def test_measure_translation_and_validation_without_node() -> None:
+    """Node-free: translation + per-axis validation measurement runs in-process."""
+    extracted = [
+        ExtractedString(
+            key=f"k.{i}",
+            default_value=f"Hello {i}",
+            source_file="f0.tsx",
+            line=1,
+            context="t-call",
+        )
+        for i in range(40)
+    ]
+    translator = FakeTranslator()
+    translations = [
+        Translation(
+            key=e.key,
+            locale=loc,
+            source_text=e.default_value,
+            translated_text=translator.translate(e.key, e.default_value, loc),
+            status="approved",
+        )
+        for e in extracted
+        for loc in DEFAULT_LOCALES
+    ]
+    seconds, count = measure_translation(extracted)
+    assert seconds >= 0.0
+    assert count == len(extracted) * len(DEFAULT_LOCALES)
+
+    rates = measure_validation(extracted, translations)
+    for axis in ("icu", "plural", "unicode", "length"):
+        assert rates[axis] > 0.0
+    assert "full_pipeline_seconds" in rates
